@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Meruem Chess Coach</title>
+<meta name="darkreader-lock">
+<meta name="color-scheme" content="light dark">
+<meta name="description" content="A chess trainer that explains every move: opening lessons, an explorer with engine and human-move statistics, a human-like Maia bot, and an AI coach.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%99%9E%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500;6..72,600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Meruem Chess Coach</h1>
+    <div class="status"><span class="dot" id="dot"></span><span id="statusText">Loading engine…</span></div>
+  </header>
+
+  <div class="tabs" role="tablist" aria-label="Mode">
+    <button role="tab" id="tabLearn" aria-selected="false">Learn openings</button>
+    <button role="tab" id="tabExplore" aria-selected="false">Explore</button>
+    <button role="tab" id="tabPlay" aria-selected="true">Play the bot</button>
+    <button role="tab" id="tabFree" aria-selected="false">Move both sides</button>
+    <button role="tab" id="tabSetup" aria-selected="false">Set up board</button>
+  </div>
+
+  <div class="main">
+    <div class="boardcol">
+      <div class="previewbar" id="previewBar" hidden>
+        <div class="ptxt"><b id="pvTitle">Watching the best line</b><span id="pvStep" class="muted"></span></div>
+        <button class="btn small" id="pvPrev" aria-label="Previous move">◀</button>
+        <button class="btn small" id="pvNext" aria-label="Next move">▶</button>
+        <button class="btn small primary" id="pvExit">Back to game</button>
+      </div>
+      <div class="evalbar" id="evalBar" aria-hidden="true"><i id="evalFill" style="width:50%"></i></div>
+      <div class="evalrow" id="evalRow"><span>White</span><span id="evalText">Roughly equal</span><span>Black</span></div>
+      <div class="boardbox">
+        <div class="board" id="board" role="grid" aria-label="Chess board"></div>
+        <svg class="arrows" id="arrows" viewBox="0 0 8 8" aria-hidden="true"></svg>
+      </div>
+      <div class="palette" id="palette" hidden></div>
+      <form class="mvform" id="mvForm" autocomplete="off" hidden>
+        <div class="mvrow"><input type="text" id="mvInput" placeholder="Type a move, e.g. Bc4 or knight to f3" aria-label="Type a move" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="go"><button class="btn primary small" type="submit">Play</button></div>
+        <div class="mvpreview" id="mvPreview" aria-live="polite"></div>
+        <div class="mvambig" id="mvAmbig" hidden></div>
+        <p class="mvmsg" id="mvMsg" hidden></p>
+        <div class="mvecho" id="mvEcho"></div>
+      </form>
+      <div class="controls" id="gameControls">
+        <button class="btn" id="btnHint">Hint</button>
+        <button class="btn" id="btnBack">Take back</button>
+        <button class="btn" id="btnFlip">Flip board</button>
+        <button class="btn primary" id="btnNew">New game</button>
+      </div>
+      <div class="controls" id="exploreControls" hidden>
+        <button class="btn" id="exPrev" aria-label="Previous move">◀ Back</button>
+        <button class="btn primary" id="exNext" aria-label="Next move">Forward ▶</button>
+        <button class="btn" id="exStart">Start position</button>
+        <button class="btn" id="exFlip">Flip board</button>
+        <button class="btn" id="exLoadGame">Load my last game</button>
+        <button class="btn" id="exPlay">Play the bot from here</button>
+      </div>
+      <div class="controls" id="learnControls" hidden>
+        <button class="btn" id="lnPrev" aria-label="Previous move">◀ Back</button>
+        <button class="btn primary" id="lnNext" aria-label="Next move">Next ▶</button>
+        <button class="btn" id="lnRestart">Start over</button>
+        <button class="btn" id="lnFlip">Flip board</button>
+        <button class="btn" id="lnPlay">Play the bot from here</button>
+        <button class="btn" id="lnFree">Analyze from here</button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <section class="card explore" id="exploreCard" hidden>
+        <div class="exhead">
+          <div class="execo" id="exEco"></div>
+          <div class="expath" id="exPath"></div>
+        </div>
+        <div id="exMove"></div>
+        <div id="exDeep"></div>
+        <div id="exCands"></div>
+        <div id="exPos"></div>
+        <div class="exfoot">
+          <label for="exAuto">Deep explanations
+            <select id="exAuto"><option value="opening" selected>Auto in the opening</option><option value="every">Auto every move</option><option value="click">When I click</option></select></label>
+          <label for="exArrow">Engine arrows <input type="checkbox" id="exArrow" checked></label>
+        </div>
+      </section>
+
+      <section class="card learn" id="learnCard" hidden>
+        <div class="lpick">
+          <label class="sr" for="lessonSel">Lesson</label>
+          <select id="lessonSel"></select>
+          <button class="btn small" id="lessonPrev" aria-label="Previous lesson">◀</button>
+          <button class="btn small" id="lessonNext" aria-label="Next lesson">▶</button>
+        </div>
+        <div id="learnBody"></div>
+      </section>
+
+      <section class="card" id="setupCard" hidden>
+        <h2>Set up a position</h2>
+        <p class="why muted" style="margin:0">Pick a piece, then tap squares to place it. Tap a square again to remove it.</p>
+        <label class="row" for="setupTurn" style="justify-content:space-between">Side to move
+          <select id="setupTurn"><option value="w">White</option><option value="b">Black</option></select></label>
+        <div class="row">
+          <button class="btn small" id="setupStart">Starting position</button>
+          <button class="btn small" id="setupClear">Clear board</button>
+          <button class="btn small" id="setupFlip">Flip board</button>
+        </div>
+        <div class="fen"><input type="text" id="fenInput" placeholder="Or paste a FEN" aria-label="FEN"><button class="btn small" id="fenLoad">Load</button></div>
+        <p class="err" id="setupErr" hidden></p>
+        <div class="row">
+          <button class="btn primary" id="setupDone">Analyze this position</button>
+          <button class="btn" id="setupPlay">Play the bot from here</button>
+        </div>
+      </section>
+
+      <section class="card" id="reviewCard" hidden>
+        <h2>Game review</h2>
+        <div id="reviewBody"></div>
+      </section>
+
+      <section class="card" id="coachCard" hidden>
+        <div class="chead"><h2>Coach</h2><span class="rating" id="ratingTag"></span></div>
+        <div id="coachNotes" aria-live="polite"></div>
+        <div id="coachTalk"></div>
+        <form class="ask" id="askForm" hidden>
+          <input type="text" id="askInput" placeholder="Ask about this position, e.g. why not take on f7?" aria-label="Ask the coach" autocomplete="off">
+          <button class="btn small primary" type="submit">Ask</button>
+        </form>
+        <div class="chat" id="chat"></div>
+      </section>
+
+      <section class="card" id="feedback" aria-live="polite">
+        <h2 id="fbTitle">Last move</h2>
+        <div id="fbBody"></div>
+      </section>
+
+      <section class="card" id="nowCard" hidden>
+        <h2 id="nowTitle">Best move here</h2>
+        <div id="nowBody"></div>
+      </section>
+
+      <section class="card" id="gameCard">
+        <h2>Game</h2>
+        <div class="sum" id="summary"></div>
+        <div class="moves" id="moves"></div>
+      </section>
+
+      <section class="card settings" id="settingsCard">
+        <h2>Settings</h2>
+        <label for="selColor">Play as
+          <select id="selColor"><option value="w">White</option><option value="b">Black</option></select></label>
+        <label for="selLevel">Bot strength
+          <select id="selLevel">
+            <option value="auto" selected>Adaptive</option><option value="600">600</option><option value="900">900</option><option value="1200">1200</option><option value="1500">1500</option><option value="1800">1800</option><option value="2200">2200</option><option value="3200">Full Stockfish</option>
+          </select></label>
+        <div class="rrow"><label for="ratingInput">Your rating</label>
+          <span class="rset"><input type="number" id="ratingInput" min="400" max="2900" step="25" inputmode="numeric"><button class="btn small" id="ratingSet" type="button">Set</button></span></div>
+        <p class="muted" id="syncNote" style="margin:0;font-size:.8rem">Saved in this browser.</p>
+        <label for="selStyle">Bot style
+          <select id="selStyle"><option value="maia" selected>Human-like (Maia)</option><option value="engine">Engine-based</option></select></label>
+        <p class="muted" id="maiaNote" style="margin:0;font-size:.8rem"></p>
+        <label for="selTalk">Coach talks
+          <select id="selTalk"><option value="key" selected>At key moments</option><option value="every">Every move</option><option value="ask">Only when I ask</option></select></label>
+        <label for="chkPause">Pause on mistakes so I can retry <input type="checkbox" id="chkPause" checked></label>
+        <p class="muted" style="margin:0;font-size:.82rem">Adaptive: the bot plays at your estimated rating, which moves after every finished game. Games with hints, retries or take-backs count half.</p>
+        <p class="muted" style="margin:0;font-size:.82rem">Pawns auto-promote to a queen. Material count: pawn 1, knight or bishop 3, rook 5, queen 9.</p>
+      </section>
+    </div>
+  </div>
+
+  <section class="card" id="aiCard">
+    <h2>Claude features (optional)</h2>
+    <p class="why muted" style="margin:0">Move explanations, the Explore deep dives and the ask box use Claude. Paste an Anthropic API key to turn them on. It's stored only in this browser and sent only to api.anthropic.com. Everything else works without it.</p>
+    <form class="fen" id="keyForm" autocomplete="off"><input type="password" id="keyInput" placeholder="sk-ant-…" aria-label="Anthropic API key"><button class="btn small" type="submit">Save</button><button class="btn small" type="button" id="keyClear">Remove</button></form>
+    <p class="muted" id="keyState" style="margin:0;font-size:.82rem"></p>
+  </section>
+</div>
+
+
+<script src="vendor/chess.js"></script>
+<script src="data/lessons.js"></script>
+<script src="data/openings.js"></script>
+<script src="maia/moves.js"></script>
+<script src="js/claude-runtime.js"></script>
+<script src="js/notation.js"></script>
+<script src="js/app.js"></script>
+<script>
+(function(){
+  const st=document.getElementById("keyState"),k=window.MBMKey;
+  if(!k){document.getElementById("aiCard").hidden=true;return;}
+  st.textContent=k.get()?"A key is saved in this browser. Claude features are on.":"No key saved. Claude features are off.";
+  document.getElementById("keyForm").onsubmit=e=>{e.preventDefault();const v=document.getElementById("keyInput").value.trim();if(!v)return;k.set(v);location.reload();};
+  document.getElementById("keyClear").onclick=()=>{k.set("");location.reload();};
+})();
+</script>
+</body>
+</html>
