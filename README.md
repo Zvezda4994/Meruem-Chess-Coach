@@ -4,7 +4,7 @@ I started learning chess and wanted something that explains every move as I play
 
 The name comes from Meruem in Hunter x Hunter, who learns a board game from scratch and is beating the world champion within days. That was roughly the goal.
 
-**Live:** https://zvezda4994.github.io/meruem-chess-coach/
+**Live:** https://zvezda4994.github.io/Meruem-Chess-Coach/
 
 ![Explore mode](docs/explore.png)
 
